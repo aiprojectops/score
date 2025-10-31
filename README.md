@@ -88,18 +88,14 @@ Python Flask 앱은 **Railway** 또는 **Render**를 추천합니다.
 
 ### **⚠️ 배포 후 필수 작업!**
 
-Render 배포 후 실제 URL을 받으면, `index.html` 파일을 업데이트해야 합니다:
+Render 배포 후 실제 URL을 `index.html` 파일에 업데이트해야 합니다:
 
 ```javascript
 // index.html 965번째 줄
 const API_BASE_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:5000' 
-    : 'https://실제-받은-url.onrender.com';  // 여기를 실제 URL로 변경!
+    : 'https://score-jj91.onrender.com';  // ✅ 실제 배포 URL
 ```
-
-**예시:**
-- Render가 준 URL: `https://html-grading-system-abc123.onrender.com`
-- 위 코드에서 `https://html-grading-system.onrender.com` → `https://html-grading-system-abc123.onrender.com` 으로 변경
 
 그 후 다시 커밋 & 푸시:
 ```bash
@@ -107,8 +103,6 @@ git add index.html
 git commit -m "Update API URL to Render deployment"
 git push origin main
 ```
-
-Render가 자동으로 재배포합니다!
 
 ---
 
