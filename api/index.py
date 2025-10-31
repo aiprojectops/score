@@ -23,7 +23,12 @@ app.config['JSON_AS_ASCII'] = False
 # CORS 설정 (프론트엔드에서 API 호출 가능하도록)
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["*"],
+        "origins": [
+            "http://localhost:5000",        # 로컬 개발
+            "http://127.0.0.1:5000",        # 로컬 개발
+            "https://score-gold.vercel.app", # Vercel 배포
+            "*"                              # 임시: 모든 도메인 허용
+        ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
