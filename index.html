@@ -964,7 +964,7 @@
         // 서버 API 엔드포인트 (개발/프로덕션 자동 감지)
         const API_BASE_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:5000' 
-            : '';  // Vercel은 같은 도메인에서 /api로 접근
+            : 'https://html-grading-system.onrender.com';  // Render 배포 후 실제 URL로 변경!
 
         // URL 복사 기능
         const EXAMPLE_URL = 'https://farm.runmoa.ai';

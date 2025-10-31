@@ -24,9 +24,6 @@ env/
 .DS_Store
 Thumbs.db
 
-# Vercel
-.vercel
-
 # 테스트 파일
 test*.html
 index_pre.html

@@ -12,7 +12,159 @@ AI 기반 HTML 파일 자동 채점 시스템입니다. OpenAI GPT-4o-mini 모�
 
 ## 🚀 배포 가이드
 
-### 1. GitHub 저장소 생성
+### ⚠️ 중요: Vercel은 Python을 제한적으로만 지원합니다!
+Python Flask 앱은 **Railway** 또는 **Render**를 추천합니다.
+
+---
+
+## 📦 추천 배포 플랫폼
+
+### 1️⃣ Render (무료! 추천!) ⭐⭐⭐⭐⭐
+
+**장점:**
+- ✅ **완전 무료** 플랜
+- ✅ Flask 완벽 지원
+- ✅ 자동 HTTPS 제공
+- ✅ GitHub 자동 배포
+- ✅ `render.yaml` 자동 인식
+
+**단점:**
+- ⚠️ 15분 비활성 후 슬립 (첫 요청 시 30초~1분 소요)
+
+---
+
+## 🚀 **Render 배포 방법 (5분 완성!)**
+
+### **방법 1: render.yaml 사용 (자동 설정 - 가장 쉬움!)**
+
+1. **https://render.com** 접속 후 GitHub로 로그인
+
+2. **"New +"** → **"Blueprint"** 클릭
+
+3. **GitHub 저장소 연결**
+   - 저장소 선택: `html-grading-system`
+   - Render가 자동으로 `render.yaml` 감지! ✅
+
+4. **Environment Variables 설정:**
+   ```
+   OPENAI_API_KEY = sk-proj-your-actual-key
+   ```
+   
+5. **"Apply"** 클릭 → 자동 배포 시작! 🎉
+
+6. **배포 완료 후:**
+   - URL: `https://html-grading-system.onrender.com`
+   - `index.html` 파일 업데이트 필요 (아래 참고)
+
+---
+
+### **방법 2: 수동 설정**
+
+1. **https://render.com** 접속
+
+2. **"New +"** → **"Web Service"** 클릭
+
+3. **GitHub 저장소 연결**
+
+4. **설정 입력:**
+   - **Name:** `html-grading-system`
+   - **Region:** `Oregon (US West)` (가장 빠름)
+   - **Branch:** `main`
+   - **Runtime:** `Python 3`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn api.index:app --bind 0.0.0.0:$PORT`
+   
+5. **Environment Variables 추가:**
+   ```
+   OPENAI_API_KEY = sk-proj-your-actual-key
+   PYTHON_VERSION = 3.11.0
+   ```
+
+6. **"Create Web Service"** 클릭
+
+---
+
+### **⚠️ 배포 후 필수 작업!**
+
+Render 배포 후 실제 URL을 받으면, `index.html` 파일을 업데이트해야 합니다:
+
+```javascript
+// index.html 965번째 줄
+const API_BASE_URL = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : 'https://실제-받은-url.onrender.com';  // 여기를 실제 URL로 변경!
+```
+
+**예시:**
+- Render가 준 URL: `https://html-grading-system-abc123.onrender.com`
+- 위 코드에서 `https://html-grading-system.onrender.com` → `https://html-grading-system-abc123.onrender.com` 으로 변경
+
+그 후 다시 커밋 & 푸시:
+```bash
+git add index.html
+git commit -m "Update API URL to Render deployment"
+git push origin main
+```
+
+Render가 자동으로 재배포합니다!
+
+---
+
+### 2️⃣ Railway (유료 크레딧) ⭐⭐⭐⭐
+
+**장점:**
+- ✅ Flask 완벽 지원
+- ✅ 무료 크레딧: $5/월
+- ✅ 슬립 없음 (항상 빠름)
+
+**배포 방법:**
+1. **https://railway.app** 접속
+2. **"New Project"** → **"Deploy from GitHub repo"**
+3. **Environment Variables:** `OPENAI_API_KEY` 설정
+4. 자동 배포 완료!
+
+---
+
+## 🌐 **프론트엔드 호스팅 (선택사항)**
+
+백엔드(Flask API)는 Render에 배포하고, 프론트엔드(`index.html`)는 별도로 호스팅할 수 있습니다:
+
+### **Option 1: GitHub Pages (무료, 가장 쉬움)**
+
+```bash
+# 프론트엔드만 별도 브랜치 생성
+git checkout -b gh-pages
+git add index.html
+git commit -m "Deploy frontend to GitHub Pages"
+git push origin gh-pages
+
+# GitHub 저장소 → Settings → Pages → Source: gh-pages
+```
+
+**URL:** `https://YOUR_USERNAME.github.io/html-grading-system/`
+
+### **Option 2: Vercel (무료, 정적 파일)**
+
+1. **https://vercel.com** 접속
+2. **Import Project** → GitHub 저장소
+3. 자동 배포 완료!
+
+**URL:** `https://your-project.vercel.app`
+
+### **Option 3: 백엔드와 함께 호스팅 (간단)**
+
+Render에서 백엔드와 함께 `index.html`도 제공:
+
+`api/index.py`에 라우트 추가:
+```python
+@app.route('/')
+def home():
+    return app.send_static_file('index.html')
+```
+
+---
+
+## 📁 **GitHub 저장소 생성**
 
 ```bash
 # 현재 디렉토리에서 Git 초기화
@@ -22,7 +174,7 @@ git init
 git add .
 
 # 첫 커밋
-git commit -m "Initial commit: HTML 채점 시스템"
+git commit -m "Initial commit: HTML 채점 시스템 (Render 배포)"
 
 # GitHub 저장소와 연결 (본인의 저장소 URL로 변경)
 git remote add origin https://github.com/YOUR_USERNAME/html-grading-system.git
@@ -32,45 +184,7 @@ git branch -M main
 git push -u origin main
 ```
 
-### 2. Vercel 배포
-
-#### 방법 1: Vercel CLI 사용
-
-```bash
-# Vercel CLI 설치 (전역)
-npm install -g vercel
-
-# 로그인
-vercel login
-
-# 배포
-vercel
-
-# 프로덕션 배포
-vercel --prod
-```
-
-#### 방법 2: Vercel 웹사이트 사용
-
-1. https://vercel.com 접속 및 로그인
-2. "New Project" 클릭
-3. GitHub 저장소 선택
-4. "Import" 클릭
-5. **환경 변수 설정**:
-   - Key: `OPENAI_API_KEY`
-   - Value: `sk-proj-your-api-key-here` (실제 API 키 입력)
-6. "Deploy" 클릭
-
-### 3. OpenAI API 키 설정
-
-1. [OpenAI Platform](https://platform.openai.com/api-keys) 접속
-2. "Create new secret key" 클릭
-3. 발급된 API 키 복사
-4. Vercel 프로젝트 설정에서 환경 변수에 추가:
-   - **Dashboard** → **Settings** → **Environment Variables**
-   - Key: `OPENAI_API_KEY`
-   - Value: 발급받은 API 키
-   - "Save" 클릭
+---
 
 ## 🛠️ 로컬 개발 (빠른 시작)
 
