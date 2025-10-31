@@ -72,7 +72,9 @@ Python Flask 앱은 **Railway** 또는 **Render**를 추천합니다.
    - **Branch:** `main`
    - **Runtime:** `Python 3`
    - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `gunicorn api.index:app --bind 0.0.0.0:$PORT`
+   - **Start Command:** `gunicorn api.index:app`
+   
+   ⚠️ **주의:** Render는 자동으로 `$PORT`를 설정하므로, `--bind 0.0.0.0:$PORT`는 선택사항입니다.
    
 5. **Environment Variables 추가:**
    ```
