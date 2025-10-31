@@ -1,0 +1,36 @@
+# 환경 변수 (API 키 보호)
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
+
+# 테스트 파일
+test*.html
+index_pre.html
+
+# 로그
+*.log
+

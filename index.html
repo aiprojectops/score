@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 파일 채점 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mode-selector {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px 30px;
+            display: flex;
+            gap: 40px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .mode-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .mode-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .mode-option label {
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .copy-icon:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.1);
+        }
+
+        .copy-icon:active {
+            transform: scale(0.95);
+        }
+
+        .copy-icon svg {
+            width: 14px;
+            height: 14px;
+            fill: white;
+        }
+
+        .copy-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .copy-toast.show {
+            opacity: 1;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 0;
+        }
+        
+        .left-frame {
+            width: 70%;
+            background: #f5f5f5;
+            border-right: 2px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .url-input-section {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            gap: 20px;
+        }
+
+        .url-input-section.active {
+            display: flex;
+        }
+
+        .url-input-container {
+            display: flex;
+            gap: 10px;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .url-input-container input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .url-input-container input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .url-input-container button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .url-input-container button:hover {
+            background: #764ba2;
+        }
+
+        .url-input-container button:active {
+            transform: scale(0.98);
+        }
+
+        .file-upload-section {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-upload-section.hidden {
+            display: none;
+        }
+        
+        .drop-zone {
+            width: 90%;
+            height: 80%;
+            border: 3px dashed #999;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.3s;
+        }
+        
+        .drop-zone.dragover {
+            border-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        
+        .drop-zone-text {
+            font-size: 24px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .drop-zone-subtext {
+            font-size: 14px;
+            color: #999;
+        }
+        
+        .file-info {
+            display: none;
+            flex-direction: column;
+            width: 90%;
+            height: 80%;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            overflow: auto;
+        }
+        
+        .file-info.active {
+            display: flex;
+        }
+        
+        .file-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .file-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            flex: 1;
+        }
+        
+        #closeFileButton {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+        
+        #closeFileButton:hover {
+            background: #d32f2f;
+        }
+        
+        .file-content {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            flex: 1;
+        }
+
+        .url-preview {
+            display: none;
+            width: 90%;
+            height: 80%;
+            background: white;
+            border-radius: 10px;
+            overflow: auto;
+            border: 1px solid #ddd;
+        }
+
+        .url-preview.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .url-preview-notice {
+            background: #fff3cd;
+            border-bottom: 2px solid #ffc107;
+            padding: 10px 15px;
+            font-size: 13px;
+            color: #856404;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .url-preview-notice strong {
+            color: #d97706;
+        }
+
+        .url-preview-header {
+            padding: 15px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .url-preview-header button {
+            padding: 8px 16px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .url-preview-header button:hover {
+            background: #d32f2f;
+        }
+
+        .url-preview iframe {
+            width: 100%;
+            flex: 1;
+            border: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-spinner.active {
+            display: block;
+        }
+
+        .loading-spinner span {
+            font-size: 14px;
+            color: #666;
+            margin-left: 10px;
+        }
+        
+        .right-frame {
+            width: 30%;
+            background: white;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .api-settings {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border: 2px solid #2196F3;
+        }
+
+        .api-settings h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #2196F3;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .api-settings input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .api-settings small {
+            display: block;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .api-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .api-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .api-toggle label {
+            font-size: 12px;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .grading-section {
+            margin-bottom: 30px;
+        }
+        
+        .ai-loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .ai-loading.active {
+            display: block;
+        }
+
+        .ai-loading .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2196F3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .grading-item {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .radio-label {
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        
+        .radio-label:hover {
+            background: #e0e0e0;
+        }
+        
+        input[type="radio"].grade-radio {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .score-display {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #4CAF50;
+            font-size: 18px;
+            font-weight: bold;
+            color: #4CAF50;
+            display: none;
+        }
+        
+        .score-display.active {
+            display: block;
+        }
+        
+        .total-score {
+            margin-top: auto;
+            padding: 20px;
+            background: #2196F3;
+            color: white;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            display: none;
+        }
+        
+        .total-score.active {
+            display: block;
+        }
+        
+        .error-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-size: 12px;
+            color: #856404;
+            display: none;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .error-details.active {
+            display: block;
+        }
+
+        /* ========================================
+           모바일 반응형 스타일 
+           ======================================== */
+
+        /* 태블릿 (768px 이하) */
+        @media screen and (max-width: 768px) {
+            .left-frame {
+                width: 60%;
+            }
+
+            .right-frame {
+                width: 40%;
+                padding: 20px;
+            }
+
+            .mode-selector {
+                padding: 15px 20px;
+                gap: 20px;
+            }
+
+            .mode-option label {
+                font-size: 14px;
+            }
+
+            .drop-zone-text {
+                font-size: 20px;
+            }
+
+            .drop-zone-subtext {
+                font-size: 12px;
+            }
+
+            .grading-item {
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+
+            .radio-label {
+                font-size: 14px;
+            }
+
+            .total-score {
+                font-size: 20px;
+                padding: 15px;
+            }
+        }
+
+        /* 모바일 (600px 이하) - 세로 레이아웃 */
+        @media screen and (max-width: 600px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .mode-selector {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+                align-items: flex-start;
+            }
+
+            .mode-option {
+                width: 100%;
+            }
+
+            .mode-option label {
+                font-size: 14px;
+                flex-wrap: wrap;
+            }
+
+            .copy-icon {
+                width: 24px;
+                height: 24px;
+            }
+
+            .copy-icon svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .content-wrapper {
+                flex-direction: column;
+            }
+
+            .left-frame {
+                width: 100%;
+                min-height: 400px;
+                border-right: none;
+                border-bottom: 2px solid #ddd;
+            }
+
+            .right-frame {
+                width: 100%;
+                padding: 20px 15px;
+            }
+
+            .url-input-container {
+                flex-direction: column;
+                width: 95%;
+            }
+
+            .url-input-container input {
+                width: 100%;
+                font-size: 16px; /* iOS zoom 방지 */
+            }
+
+            .url-input-container button {
+                width: 100%;
+                padding: 14px;
+                font-size: 16px;
+            }
+
+            .url-preview-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .url-preview-notice {
+                font-size: 11px;
+                padding: 8px 10px;
+            }
+
+            .url-preview-header {
+                padding: 10px;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .url-preview-header span {
+                font-size: 11px;
+                word-break: break-all;
+            }
+
+            .url-preview-header button {
+                width: 100%;
+                font-size: 11px;
+                padding: 10px;
+            }
+
+            .file-info-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            #closeFileButton {
+                width: 100%;
+                font-size: 11px;
+                padding: 10px;
+            }
+
+            .drop-zone {
+                width: 95%;
+                height: 300px;
+            }
+
+            .drop-zone-text {
+                font-size: 18px;
+                text-align: center;
+                padding: 0 10px;
+            }
+
+            .file-info {
+                width: 95%;
+                height: 350px;
+                padding: 15px;
+            }
+
+            .file-name {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+
+            .url-preview {
+                width: 95%;
+                height: 350px;
+            }
+
+            .grading-section {
+                margin-bottom: 20px;
+            }
+
+            .grading-item {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+
+            .radio-label {
+                font-size: 14px;
+                padding: 10px 8px;
+            }
+
+            input[type="radio"].grade-radio {
+                width: 20px;
+                height: 20px;
+            }
+
+            .score-display {
+                font-size: 16px;
+                padding: 8px;
+            }
+
+            .error-details {
+                font-size: 11px;
+                padding: 8px;
+            }
+
+            .total-score {
+                font-size: 20px;
+                padding: 15px;
+                margin-top: 20px;
+            }
+        }
+
+        /* 소형 모바일 (480px 이하) */
+        @media screen and (max-width: 480px) {
+            .mode-selector {
+                padding: 12px;
+            }
+
+            .mode-option label {
+                font-size: 13px;
+            }
+
+            .mode-option input[type="radio"] {
+                width: 18px;
+                height: 18px;
+            }
+
+            .left-frame {
+                min-height: 350px;
+            }
+
+            .drop-zone {
+                height: 250px;
+            }
+
+            .drop-zone-text {
+                font-size: 16px;
+            }
+
+            .drop-zone-subtext {
+                font-size: 11px;
+            }
+
+            .file-info,
+            .url-preview {
+                height: 300px;
+            }
+
+            .right-frame {
+                padding: 15px 10px;
+            }
+
+            .grading-item {
+                padding: 10px;
+                margin-bottom: 12px;
+            }
+
+            .radio-label {
+                font-size: 13px;
+                padding: 8px;
+            }
+
+            .score-display {
+                font-size: 14px;
+            }
+
+            .total-score {
+                font-size: 18px;
+                padding: 12px;
+            }
+        }
+
+        /* 가로 모드 모바일 대응 */
+        @media screen and (max-height: 600px) and (orientation: landscape) {
+            body {
+                height: auto;
+            }
+
+            .left-frame {
+                min-height: 300px;
+            }
+
+            .drop-zone,
+            .file-info,
+            .url-preview {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mode-selector">
+        <div class="mode-option">
+            <input type="radio" id="modeFile" name="inputMode" value="file" checked>
+            <label for="modeFile">📁 HTML 파일 업로드</label>
+        </div>
+        <div class="mode-option">
+            <input type="radio" id="modeUrl" name="inputMode" value="url">
+            <label for="modeUrl">
+                🌐 URL 입력 (예. https://farm.runmoa.ai
+                <span class="copy-icon" id="copyUrlIcon" title="URL 복사">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                </span>)
+            </label>
+        </div>
+    </div>
+
+    <!-- 복사 성공 토스트 메시지 -->
+    <div class="copy-toast" id="copyToast">URL이 복사되었습니다! 📋</div>
+
+    <div class="content-wrapper">
+        <div class="left-frame">
+            <!-- URL 입력 섹션 -->
+            <div class="url-input-section" id="urlInputSection">
+                <div class="url-input-container">
+                    <input 
+                        type="text" 
+                        id="urlInput" 
+                        placeholder="https://example.com 형식으로 입력하세요"
+                        value=""
+                    >
+                    <button id="loadUrlButton">로드</button>
+                </div>
+            </div>
+
+            <!-- URL 미리보기 -->
+            <div class="url-preview" id="urlPreview">
+                <div class="url-preview-notice" id="urlPreviewNotice">
+                    🔄 <strong>HTML 가져오는 중...</strong> CORS 정책에 따라 채점 가능 여부가 결정됩니다.
+                </div>
+                <div class="url-preview-header">
+                    <span id="loadedUrlDisplay"></span>
+                    <button id="closeUrlButton" title="닫기">✕ 닫기</button>
+                </div>
+                <iframe 
+                    id="urlPreviewFrame" 
+                    title="URL Preview"
+                    allow="camera; microphone; geolocation; autoplay; encrypted-media; fullscreen"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads allow-top-navigation"
+                    allowfullscreen
+                ></iframe>
+            </div>
+
+            <!-- 파일 업로드 섹션 -->
+            <div class="file-upload-section" id="fileUploadSection">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-text">📁 HTML 파일을 여기에 드래그하세요</div>
+                    <div class="drop-zone-subtext">또는 클릭하여 파일 선택</div>
+                    <input type="file" id="fileInput" accept=".html,.htm" style="display: none;">
+                </div>
+                <div class="file-info" id="fileInfo">
+                    <div class="file-info-header">
+                        <div class="file-name" id="fileName"></div>
+                        <button id="closeFileButton" title="닫기">✕ 닫기</button>
+                    </div>
+                    <iframe 
+                        class="file-content" 
+                        id="fileContent" 
+                        title="File Preview"
+                        allow="camera; microphone; geolocation; autoplay; encrypted-media; fullscreen"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups allow-downloads allow-top-navigation"
+                        allowfullscreen
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+        
+        <div class="right-frame">
+            <!-- AI 활성화 표시 -->
+            <div class="api-settings" style="padding: 10px 15px; margin-bottom: 15px; background: #e8f5e9; border: 1px solid #4CAF50; border-radius: 8px;">
+                <h3 style="margin: 0; font-size: 13px; color: #4CAF50;">
+                    ✅ AI 채점 활성화됨
+                </h3>
+                <p style="margin: 5px 0 0 0; font-size: 11px; color: #666;">
+                    서버에서 OpenAI API를 통해 자동 채점합니다
+                </p>
+            </div>
+
+            <!-- 로딩 표시 -->
+            <div class="ai-loading" id="aiLoading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; font-size: 14px; color: #2196F3;">AI가 분석 중입니다...</p>
+            </div>
+
+            <div class="grading-section">
+                <div class="grading-item">
+                    <label class="radio-label">
+                        <input type="radio" name="grading" value="grammar">
+                        문법의 정확성 (30점)
+                    </label>
+                    <div class="score-display" id="grammarScore"></div>
+                    <div class="error-details" id="grammarErrors"></div>
+                </div>
+                
+                <div class="grading-item">
+                    <label class="radio-label">
+                        <input type="radio" name="grading" value="word">
+                        단어 오류 (30점)
+                    </label>
+                    <div class="score-display" id="wordScore"></div>
+                    <div class="error-details" id="wordErrors"></div>
+                </div>
+                
+                <div class="grading-item">
+                    <label class="radio-label">
+                        <input type="radio" name="grading" value="completeness">
+                        상세페이지 완성도 (40점)
+                    </label>
+                    <div class="score-display" id="completenessScore"></div>
+                    <div class="error-details" id="completenessErrors"></div>
+                </div>
+            </div>
+            
+            <div class="total-score" id="totalScore">
+                전체 평점: 0점
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let htmlContent = '';
+        let scores = {
+            grammar: null,
+            word: null,
+            completeness: null
+        };
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileContent = document.getElementById('fileContent');
+
+        // AI 채점 설정 (서버 기반)
+        const aiLoadingDiv = document.getElementById('aiLoading');
+        
+        // 서버 API 엔드포인트 (개발/프로덕션 자동 감지)
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : '';  // Vercel은 같은 도메인에서 /api로 접근
+
+        // URL 복사 기능
+        const EXAMPLE_URL = 'https://farm.runmoa.ai';
+        const copyUrlIcon = document.getElementById('copyUrlIcon');
+        const copyToast = document.getElementById('copyToast');
+
+        copyUrlIcon.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // URL 복사
+            copyToClipboard(EXAMPLE_URL);
+            
+            // URL 라디오 버튼 자동 선택
+            const urlRadio = document.getElementById('modeUrl');
+            if (!urlRadio.checked) {
+                urlRadio.checked = true;
+                // change 이벤트 트리거하여 UI 전환
+                urlRadio.dispatchEvent(new Event('change'));
+            }
+            
+            // URL 입력창에 포커스
+            setTimeout(() => {
+                document.getElementById('urlInput').focus();
+            }, 100);
+        });
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                // 최신 Clipboard API 사용
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        showCopyToast();
+                    })
+                    .catch(() => {
+                        fallbackCopyToClipboard(text);
+                    });
+            } else {
+                // 구형 브라우저 대체 방법
+                fallbackCopyToClipboard(text);
+            }
+        }
+
+        function fallbackCopyToClipboard(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyToast();
+            } catch (err) {
+                console.error('복사 실패:', err);
+                alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showCopyToast() {
+            copyToast.classList.add('show');
+            setTimeout(() => {
+                copyToast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 드래그 앤 드롭 이벤트
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (file && (file.name.endsWith('.html') || file.name.endsWith('.htm'))) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    htmlContent = e.target.result;
+                    fileName.textContent = `파일명: ${file.name}`;
+                    
+                    // iframe에 HTML 내용을 렌더링
+                    const iframe = document.getElementById('fileContent');
+                    iframe.srcdoc = htmlContent;
+                    
+                    dropZone.style.display = 'none';
+                    fileInfo.classList.add('active');
+                };
+                reader.readAsText(file);
+            } else {
+                alert('HTML 파일만 업로드 가능합니다.');
+            }
+        }
+
+        // OpenAI API로 AI 채점
+        // 서버 API를 통한 AI 채점
+        async function checkWithAI(text, category) {
+            aiLoadingDiv.classList.add('active');
+
+            try {
+                // 텍스트 준비 (문법/단어는 텍스트만, 완성도는 HTML 전체)
+                let textToSend = text;
+                if (category === 'grammar' || category === 'word') {
+                    textToSend = extractTextFromHtml(text);
+                }
+
+                // 서버 API 호출
+                const response = await fetch(`${API_BASE_URL}/api/check-grammar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: textToSend,
+                        category: category
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `서버 오류: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                aiLoadingDiv.classList.remove('active');
+
+                if (data.success) {
+                    return {
+                        score: data.score,
+                        errorCount: data.errorCount,
+                        detail: data.detail
+                    };
+                } else {
+                    throw new Error(data.error || 'AI 채점 실패');
+                }
+
+            } catch (error) {
+                console.error('AI 채점 오류:', error);
+                aiLoadingDiv.classList.remove('active');
+                
+                // 서버에 API 키가 설정되지 않은 경우
+                if (error.message.includes('API 키가 설정되지 않았습니다')) {
+                    alert('⚠️ 서버에 API 키가 설정되지 않아 AI 채점을 사용할 수 없습니다.\n기본 채점으로 진행됩니다.');
+                } else {
+                    alert('AI 채점 중 오류가 발생했습니다.\n기본 채점으로 진행됩니다.\n\n오류: ' + error.message);
+                }
+                return null;
+            }
+        }
+
+        // HTML에서 실제 텍스트만 추출
+        function extractTextFromHtml(html) {
+            // 임시 div 요소를 만들어 DOM 파서 활용
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // script, style 태그 제거
+            const scripts = tempDiv.querySelectorAll('script, style');
+            scripts.forEach(el => el.remove());
+            
+            // 텍스트만 추출 (textContent 사용)
+            let text = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // 여러 공백을 하나로
+            text = text.replace(/\s+/g, ' ').trim();
+            
+            return text;
+        }
+
+        // 한글 문법 체크
+        function checkGrammar(text) {
+            let errorCount = 0;
+            const errorList = [];
+            const koreanText = extractTextFromHtml(text); // HTML에서 텍스트 추출
+            
+            // 조사 오류 체크
+            const particleMatches = koreanText.match(/(이가|은는|을를)\s/g) || [];
+            particleMatches.forEach(err => {
+                errorList.push(`"${err.trim()}" (조사 중복)`);
+            });
+            errorCount += particleMatches.length;
+            
+            // 일반적인 맞춤법 오류 패턴
+            const spellingPatterns = [
+                { pattern: /(되|돼)어/g, desc: '→ "되어" 또는 "돼"' },
+                { pattern: /안\s*(되|돼)/g, desc: '→ "안 돼" 또는 "못 해"' },
+                { pattern: /오새요/g, desc: '→ "오세요"' },
+                { pattern: /가세요/g, desc: '→ "가세요" 확인 필요' },
+                { pattern: /와새요/g, desc: '→ "오세요"' },
+                { pattern: /계새요/g, desc: '→ "계세요"' },
+                { pattern: /하겠읍니다/g, desc: '→ "하겠습니다"' },
+                { pattern: /되새요/g, desc: '→ "되세요"' },
+                { pattern: /있읍니다/g, desc: '→ "있습니다"' },
+            ];
+            
+            spellingPatterns.forEach(({ pattern, desc }) => {
+                const matches = koreanText.match(pattern);
+                if (matches) {
+                    matches.forEach(match => {
+                        errorList.push(`"${match}" ${desc}`);
+                    });
+                    errorCount += matches.length;
+                }
+            });
+            
+            // 띄어쓰기 필요한 명확한 패턴만 체크 (오탐 최소화)
+            // "할 수 있다"처럼 확실한 패턴만 검사
+            const canDoPattern = /([가-힣]+)수([가-힣]+있)/g;
+            const canDoMatches = koreanText.match(canDoPattern);
+            if (canDoMatches) {
+                // "수요일", "수입" 등은 제외
+                const exceptions = ['수요일', '수입', '수출', '물수'];
+                const filtered = canDoMatches.filter(m => !exceptions.some(ex => m.includes(ex)));
+                filtered.forEach(match => {
+                    errorList.push(`"${match}" (수 있다 띄어쓰기)`);
+                });
+                errorCount += filtered.length;
+            }
+            
+            return {
+                count: errorCount,
+                errors: errorList
+            };
+        }
+
+        // 단어 오류 체크
+        function checkWords(text) {
+            let errorCount = 0;
+            const errorList = [];
+            const koreanText = extractTextFromHtml(text); // HTML에서 텍스트 추출
+            
+            // 영문/한글 혼용 오류 (공백 없이 붙어있는 경우)
+            const mixedMatches = koreanText.match(/[a-zA-Z][가-힣]|[가-힣][a-zA-Z]/g) || [];
+            mixedMatches.forEach(err => {
+                errorList.push(`"${err}" (영한 혼용, 띄어쓰기 필요)`);
+            });
+            errorCount += mixedMatches.length;
+            
+            // 오타 가능성 체크 (자음/모음만 있는 경우)
+            const typoMatches = koreanText.match(/[ㄱ-ㅎㅏ-ㅣ]{2,}/g) || [];
+            typoMatches.forEach(err => {
+                errorList.push(`"${err}" (불완전한 글자)`);
+            });
+            errorCount += typoMatches.length;
+            
+            // 흔한 오타 패턴
+            const commonTypos = [
+                { pattern: /오새요/g, desc: '→ "오세요"' },
+                { pattern: /와새요/g, desc: '→ "오세요"' },
+                { pattern: /계새요/g, desc: '→ "계세요"' },
+                { pattern: /되새요/g, desc: '→ "되세요"' },
+                { pattern: /있읍니다/g, desc: '→ "있습니다"' },
+                { pattern: /읍니다/g, desc: '→ "습니다"' },
+                { pattern: /싶읍니다/g, desc: '→ "싶습니다"' },
+                { pattern: /하겠읍니다/g, desc: '→ "하겠습니다"' },
+                { pattern: /되겠읍니다/g, desc: '→ "되겠습니다"' },
+            ];
+            
+            commonTypos.forEach(({ pattern, desc }) => {
+                const matches = koreanText.match(pattern);
+                if (matches) {
+                    matches.forEach(match => {
+                        errorList.push(`"${match}" ${desc}`);
+                    });
+                    errorCount += matches.length;
+                }
+            });
+            
+            return {
+                count: errorCount,
+                errors: errorList
+            };
+        }
+
+        // HTML 완성도 체크
+        function checkCompleteness(html) {
+            const errors = [];
+            
+            // 기본 구조 체크
+            if (!html.includes('<!DOCTYPE')) errors.push('DOCTYPE 선언 누락');
+            if (!html.includes('<html')) errors.push('html 태그 누락');
+            if (!html.includes('<head>')) errors.push('head 태그 누락');
+            if (!html.includes('<body>')) errors.push('body 태그 누락');
+            if (!html.includes('<meta charset')) errors.push('charset 메타태그 누락');
+            
+            // 태그 닫힘 체크
+            const openTags = (html.match(/<([a-z]+)(?:\s|>)/gi) || []).length;
+            const closeTags = (html.match(/<\/[a-z]+>/gi) || []).length;
+            const selfClosing = (html.match(/<[^>]+\/>/g) || []).length;
+            if (openTags - selfClosing > closeTags + 5) errors.push('닫히지 않은 태그 존재');
+            
+            return {
+                count: errors.length,
+                errors: errors
+            };
+        }
+
+        // 라디오 버튼 클릭 이벤트
+        document.querySelectorAll('input[name="grading"]').forEach(radio => {
+            radio.addEventListener('click', async function() {
+                if (!htmlContent) {
+                    alert('먼저 HTML 파일을 업로드하거나 URL을 입력해주세요.');
+                    this.checked = false;
+                    return;
+                }
+
+                // CORS 에러로 HTML을 가져오지 못한 경우
+                if (htmlContent.includes('<!-- CORS Error:')) {
+                    alert('⚠️ CORS 정책으로 HTML을 가져올 수 없어 채점이 불가능합니다!\n\n채점하려면:\n1. "✕ 닫기" 버튼 클릭\n2. "📁 HTML 파일 업로드" 선택\n3. HTML 파일을 드래그하여 업로드');
+                    this.checked = false;
+                    return;
+                }
+
+                const type = this.value;
+                let score, errorCount, errorDetails;
+
+                // AI 채점 시도
+                const aiResult = await checkWithAI(htmlContent, type);
+
+                if (aiResult) {
+                    // AI 채점 성공
+                    score = aiResult.score;
+                    errorCount = aiResult.errorCount;
+                    errorDetails = `🤖 AI 분석: ${errorCount}개 오류 발견\n${aiResult.detail}`;
+                } else {
+                    // 기본 채점 (AI 미사용 또는 실패)
+                    if (type === 'grammar') {
+                        const result = checkGrammar(htmlContent);
+                        errorCount = result.count;
+                        if (errorCount >= 5) score = 27;
+                        else if (errorCount >= 3) score = 28;
+                        else if (errorCount >= 1) score = 29;
+                        else score = 30;
+                        const errorList = result.errors.slice(0, 10); // 최대 10개만 표시
+                        const moreErrors = result.errors.length > 10 ? `\n... 외 ${result.errors.length - 10}개 더` : '';
+                        errorDetails = `기본 분석: 문법 오류 ${errorCount}개 발견\n\n발견된 오류:\n${errorList.join('\n')}${moreErrors}`;
+                    } else if (type === 'word') {
+                        const result = checkWords(htmlContent);
+                        errorCount = result.count;
+                        if (errorCount >= 5) score = 27;
+                        else if (errorCount >= 3) score = 28;
+                        else if (errorCount >= 1) score = 29;
+                        else score = 30;
+                        const errorList = result.errors.slice(0, 10); // 최대 10개만 표시
+                        const moreErrors = result.errors.length > 10 ? `\n... 외 ${result.errors.length - 10}개 더` : '';
+                        errorDetails = `기본 분석: 단어 오류 ${errorCount}개 발견\n\n발견된 오류:\n${errorList.join('\n')}${moreErrors}`;
+                    } else if (type === 'completeness') {
+                        const result = checkCompleteness(htmlContent);
+                        errorCount = result.count;
+                        if (errorCount >= 5) score = 37;
+                        else if (errorCount >= 3) score = 38;
+                        else if (errorCount >= 1) score = 39;
+                        else score = 40;
+                        errorDetails = `기본 분석: 완성도 오류 ${errorCount}개 발견\n\n발견된 오류:\n${result.errors.join('\n')}`;
+                    }
+                }
+
+                // 결과 표시
+                if (type === 'grammar') {
+                    document.getElementById('grammarScore').textContent = `${score}점`;
+                    document.getElementById('grammarScore').classList.add('active');
+                    document.getElementById('grammarErrors').textContent = errorDetails;
+                    document.getElementById('grammarErrors').classList.add('active');
+                    scores.grammar = score;
+                } else if (type === 'word') {
+                    document.getElementById('wordScore').textContent = `${score}점`;
+                    document.getElementById('wordScore').classList.add('active');
+                    document.getElementById('wordErrors').textContent = errorDetails;
+                    document.getElementById('wordErrors').classList.add('active');
+                    scores.word = score;
+                } else if (type === 'completeness') {
+                    document.getElementById('completenessScore').textContent = `${score}점`;
+                    document.getElementById('completenessScore').classList.add('active');
+                    document.getElementById('completenessErrors').textContent = errorDetails;
+                    document.getElementById('completenessErrors').classList.add('active');
+                    scores.completeness = score;
+                }
+
+                updateTotalScore();
+            });
+        });
+
+        // 입력 모드 선택 라디오 버튼 이벤트
+        document.querySelectorAll('input[name="inputMode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const isFileMode = this.value === 'file';
+                const isUrlMode = this.value === 'url';
+                
+                if (isFileMode) {
+                    // 파일 모드: 드래그존과 파일정보 표시
+                    document.getElementById('fileUploadSection').classList.remove('hidden');
+                    document.getElementById('urlInputSection').classList.remove('active');
+                    document.getElementById('urlPreview').classList.remove('active');
+                    
+                    // 스코어 초기화
+                    resetScores();
+                    htmlContent = '';
+                } else if (isUrlMode) {
+                    // URL 모드: URL 입력창 표시
+                    document.getElementById('fileUploadSection').classList.add('hidden');
+                    document.getElementById('urlInputSection').classList.add('active');
+                    
+                    // 스코어 초기화
+                    resetScores();
+                    htmlContent = '';
+                }
+            });
+        });
+
+        // URL 로드 버튼 클릭 이벤트
+        document.getElementById('loadUrlButton').addEventListener('click', loadUrlContent);
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadUrlContent();
+            }
+        });
+
+        // URL 닫기 버튼 이벤트
+        document.getElementById('closeUrlButton').addEventListener('click', function() {
+            document.getElementById('urlPreview').classList.remove('active');
+            document.getElementById('urlInputSection').classList.add('active');
+            document.getElementById('urlInput').value = '';
+            document.getElementById('urlInput').focus();
+        });
+
+        // 파일 닫기 버튼 이벤트
+        document.getElementById('closeFileButton').addEventListener('click', function() {
+            const fileInfo = document.getElementById('fileInfo');
+            const dropZone = document.getElementById('dropZone');
+            
+            fileInfo.classList.remove('active');
+            dropZone.style.display = ''; // 인라인 스타일 제거하여 원래 display 값으로 복원
+            
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileContent').srcdoc = '';
+            htmlContent = '';
+            resetScores();
+        });
+
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        async function loadUrlContent() {
+            const urlInput = document.getElementById('urlInput').value.trim();
+            
+            if (!urlInput) {
+                alert('URL을 입력해주세요.');
+                return;
+            }
+
+            // URL 유효성 검사
+            if (!isValidUrl(urlInput)) {
+                alert('올바른 URL 형식을 입력해주세요. (예: https://example.com)');
+                return;
+            }
+
+            const urlWithProtocol = addHttpProtocolIfMissing(urlInput);
+            
+            // 미리보기 표시
+            document.getElementById('urlPreview').classList.add('active');
+            document.getElementById('urlInputSection').classList.remove('active');
+            document.getElementById('loadedUrlDisplay').textContent = `로드된 URL: ${urlWithProtocol} (HTML 가져오는 중...)`;
+            document.getElementById('urlPreviewFrame').src = urlWithProtocol;
+            
+            // URL에서 HTML 내용 가져오기 시도
+            try {
+                const response = await fetch(urlWithProtocol, {
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                if (response.ok) {
+                    htmlContent = await response.text();
+                    document.getElementById('loadedUrlDisplay').textContent = `로드된 URL: ${urlWithProtocol} ✅ 채점 가능`;
+                    
+                    // 성공 메시지
+                    if (isMobileDevice()) {
+                        document.getElementById('urlPreviewNotice').innerHTML = 
+                            '✅ <strong>iframe을 사용, 카메라 권한 문제로 PC 사용을 권장합니다.</strong>';
+                        document.getElementById('urlPreviewNotice').style.background = '#e8f5e9';
+                        document.getElementById('urlPreviewNotice').style.borderColor = '#4CAF50';
+                    } else {
+                        document.getElementById('urlPreviewNotice').innerHTML = 
+                            '✅ <strong>iframe을 사용, 카메라 권한 문제로 PC 사용을 권장합니다.</strong>';
+                        document.getElementById('urlPreviewNotice').style.background = '#e8f5e9';
+                        document.getElementById('urlPreviewNotice').style.borderColor = '#4CAF50';
+                    }
+                } else {
+                    throw new Error('HTTP 오류: ' + response.status);
+                }
+            } catch (error) {
+                // CORS 에러 또는 네트워크 오류
+                console.error('HTML 가져오기 실패:', error);
+                document.getElementById('loadedUrlDisplay').textContent = `로드된 URL: ${urlWithProtocol} ⚠️ 미리보기만 가능`;
+                htmlContent = `<!-- CORS Error: Unable to fetch from ${urlWithProtocol} -->`;
+                
+                // 경고 메시지
+                document.getElementById('urlPreviewNotice').innerHTML = 
+                    '⚠️ <strong>CORS 정책으로 HTML을 가져올 수 없습니다.</strong> iframe 미리보기만 가능하며 채점은 불가능합니다. ' +
+                    '<strong style="color: #d32f2f;">채점하려면 "📁 HTML 파일 업로드" 모드를 사용하세요!</strong>';
+                document.getElementById('urlPreviewNotice').style.background = '#fff3cd';
+                document.getElementById('urlPreviewNotice').style.borderColor = '#ffc107';
+            }
+        }
+
+        function isValidUrl(urlString) {
+            try {
+                new URL(urlString.startsWith('http') ? urlString : `https://${urlString}`);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function addHttpProtocolIfMissing(urlString) {
+            if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+                return `https://${urlString}`;
+            }
+            return urlString;
+        }
+
+        function updateTotalScore() {
+            if (scores.grammar !== null && scores.word !== null && scores.completeness !== null) {
+                const total = scores.grammar + scores.word + scores.completeness;
+                document.getElementById('totalScore').textContent = `전체 평점: ${total}점`;
+                document.getElementById('totalScore').classList.add('active');
+            }
+        }
+
+        function resetScores() {
+            scores.grammar = null;
+            scores.word = null;
+            scores.completeness = null;
+            
+            document.getElementById('grammarScore').classList.remove('active');
+            document.getElementById('wordScore').classList.remove('active');
+            document.getElementById('completenessScore').classList.remove('active');
+            document.getElementById('grammarErrors').classList.remove('active');
+            document.getElementById('wordErrors').classList.remove('active');
+            document.getElementById('completenessErrors').classList.remove('active');
+            document.getElementById('totalScore').classList.remove('active');
+            
+            document.querySelectorAll('input[name="grading"]').forEach(radio => {
+                radio.checked = false;
+            });
+        }
+    </script>
+</body>
+</html>
