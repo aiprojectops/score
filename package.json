@@ -1,0 +1,9 @@
+{
+  "name": "html-grading-frontend",
+  "version": "1.0.0",
+  "description": "HTML 채점 시스템 프론트엔드",
+  "scripts": {
+    "build": "echo 'No build needed - static HTML'"
+  }
+}
+
