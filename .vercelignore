@@ -1,0 +1,23 @@
+# 백엔드 관련 파일 무시 (Render에 배포됨)
+api/
+requirements.txt
+runtime.txt
+Procfile
+render.yaml
+.env
+env.example
+
+# Python 관련
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+
+# 테스트 파일
+test*.html
+
+# 기타
+README.md
+
